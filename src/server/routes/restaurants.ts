@@ -1,18 +1,12 @@
 /**
  * Restaurant search routes (HotPepper API integration)
- *
- * All routes are protected with auth middleware.
  */
 
 import { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth';
 import type { AppEnv } from '../middleware/auth';
 import { searchRestaurants } from '../lib/hotpepper';
 
 const restaurants = new Hono<AppEnv>();
-
-// All restaurant routes require authentication
-restaurants.use('/*', authMiddleware);
 
 /**
  * GET /api/restaurants/search

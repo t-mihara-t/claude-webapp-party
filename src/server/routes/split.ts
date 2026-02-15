@@ -1,20 +1,19 @@
 /**
  * Split calculation routes
  *
- * All routes are protected with auth middleware.
  * Handles CRUD for split rules/ratios and the calculation endpoint.
  */
 
 import { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth';
+import { defaultOrganizerMiddleware } from '../middleware/auth';
 import type { AppEnv } from '../middleware/auth';
 import { calculateSplit } from '../lib/split';
 import type { Rounding, ParticipantForSplit, RatioEntry } from '../lib/split';
 
 const split = new Hono<AppEnv>();
 
-// All split routes require authentication
-split.use('/*', authMiddleware);
+// All split routes use default organizer
+split.use('/*', defaultOrganizerMiddleware);
 
 /**
  * Helper: Verify event ownership and return event data.
@@ -169,17 +168,6 @@ split.put('/:id/split', async (c) => {
 /**
  * POST /api/events/:id/split/calculate
  * Calculate split amounts for all attending participants.
- *
- * Logic:
- * 1. Get all attending participants
- * 2. Get split rules + ratios
- * 3. For each participant, find matching ratio (role+gender, fallback role-only)
- * 4. "free" role always = 0 yen
- * 5. Calculate shares proportionally
- * 6. Apply rounding
- * 7. Adjust first non-free participant for remainder
- * 8. Save assigned_amounts to participants
- * 9. Return results
  */
 split.post('/:id/split/calculate', async (c) => {
   const organizerId = c.get('organizerId');

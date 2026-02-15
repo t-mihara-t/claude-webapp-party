@@ -8,7 +8,4 @@ database_name = "nomi-kai-db"
 database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 [vars]
-GOOGLE_CLIENT_ID = ""
-GOOGLE_CLIENT_SECRET = ""
-JWT_SECRET = "change-me-in-production"
 HOTPEPPER_API_KEY = ""

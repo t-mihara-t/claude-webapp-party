@@ -1,33 +1,21 @@
 /**
  * Participant management routes
  *
- * Mix of protected (organizer) and public (participant self-service) endpoints.
+ * Mix of organizer and public (participant self-service) endpoints.
  */
 
 import { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth';
+import { defaultOrganizerMiddleware } from '../middleware/auth';
 import type { AppEnv } from '../middleware/auth';
 
 const participants = new Hono<AppEnv>();
 
 /**
  * GET /api/events/:id/participants
- * List all participants for an event (protected).
+ * List all participants for an event.
  */
-participants.get('/:id/participants', authMiddleware, async (c) => {
-  const organizerId = c.get('organizerId');
+participants.get('/:id/participants', defaultOrganizerMiddleware, async (c) => {
   const eventId = c.req.param('id');
-
-  // Verify the organizer owns this event
-  const event = await c.env.DB.prepare(
-    'SELECT id FROM events WHERE id = ? AND organizer_id = ?'
-  )
-    .bind(eventId, organizerId)
-    .first();
-
-  if (!event) {
-    return c.json({ error: 'Event not found' }, 404);
-  }
 
   const result = await c.env.DB.prepare(
     `SELECT * FROM participants WHERE event_id = ? ORDER BY created_at ASC`
@@ -40,7 +28,7 @@ participants.get('/:id/participants', authMiddleware, async (c) => {
 
 /**
  * POST /api/events/:id/participants
- * Add a participant (NO auth required - for self-registration from participant page).
+ * Add a participant (for self-registration from participant page).
  */
 participants.post('/:id/participants', async (c) => {
   const eventId = c.req.param('id');
@@ -102,8 +90,6 @@ participants.post('/:id/participants', async (c) => {
 /**
  * PUT /api/events/:id/participants/:pid
  * Update a participant.
- * Protected for role/amount/payment_status changes.
- * No auth required for attendance-only updates (detected by request body).
  */
 participants.put('/:id/participants/:pid', async (c) => {
   const eventId = c.req.param('id');
@@ -117,33 +103,6 @@ participants.put('/:id/participants/:pid', async (c) => {
     assigned_amount?: number;
     payment_status?: string;
   }>();
-
-  // Determine if this is an attendance-only update (public) or a full update (protected)
-  const isAttendanceOnly = body.attendance !== undefined &&
-    body.role === undefined &&
-    body.assigned_amount === undefined &&
-    body.payment_status === undefined &&
-    body.name === undefined &&
-    body.gender === undefined;
-
-  if (!isAttendanceOnly) {
-    // Protected: require auth
-    const authResult = await authMiddleware(c, async () => {});
-    if (authResult) return authResult;
-
-    const organizerId = c.get('organizerId');
-
-    // Verify ownership
-    const event = await c.env.DB.prepare(
-      'SELECT id FROM events WHERE id = ? AND organizer_id = ?'
-    )
-      .bind(eventId, organizerId)
-      .first();
-
-    if (!event) {
-      return c.json({ error: 'Event not found' }, 404);
-    }
-  }
 
   // Verify participant exists for this event
   const existing = await c.env.DB.prepare(
@@ -190,23 +149,11 @@ participants.put('/:id/participants/:pid', async (c) => {
 
 /**
  * DELETE /api/events/:id/participants/:pid
- * Remove a participant (protected).
+ * Remove a participant.
  */
-participants.delete('/:id/participants/:pid', authMiddleware, async (c) => {
-  const organizerId = c.get('organizerId');
+participants.delete('/:id/participants/:pid', defaultOrganizerMiddleware, async (c) => {
   const eventId = c.req.param('id');
   const participantId = c.req.param('pid');
-
-  // Verify ownership
-  const event = await c.env.DB.prepare(
-    'SELECT id FROM events WHERE id = ? AND organizer_id = ?'
-  )
-    .bind(eventId, organizerId)
-    .first();
-
-  if (!event) {
-    return c.json({ error: 'Event not found' }, 404);
-  }
 
   const existing = await c.env.DB.prepare(
     'SELECT id FROM participants WHERE id = ? AND event_id = ?'
@@ -228,7 +175,6 @@ participants.delete('/:id/participants/:pid', authMiddleware, async (c) => {
 /**
  * POST /api/events/:id/respond
  * Public endpoint for attendance response.
- * Allows participants to respond by name + attendance status.
  */
 participants.post('/:id/respond', async (c) => {
   const eventId = c.req.param('id');
@@ -271,7 +217,6 @@ participants.post('/:id/respond', async (c) => {
   const now = new Date().toISOString();
 
   if (existing) {
-    // Update existing participant's attendance
     await c.env.DB.prepare(
       'UPDATE participants SET attendance = ?, updated_at = ? WHERE id = ?'
     )
@@ -286,7 +231,6 @@ participants.post('/:id/respond', async (c) => {
 
     return c.json({ participant, updated: true });
   } else {
-    // Create new participant with attendance response
     const id = crypto.randomUUID();
 
     await c.env.DB.prepare(

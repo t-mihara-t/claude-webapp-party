@@ -1,27 +1,27 @@
 /**
  * Event CRUD routes
  *
- * All routes are protected with auth middleware except GET /api/events/:id/public.
+ * Uses default organizer middleware (no auth).
+ * GET /api/events/:id/public remains a separate public endpoint.
  */
 
 import { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth';
+import { defaultOrganizerMiddleware } from '../middleware/auth';
 import type { AppEnv } from '../middleware/auth';
 
 const events = new Hono<AppEnv>();
 
-// Apply auth middleware to all routes in this router
+// Apply default organizer middleware to all routes except public endpoint
 events.use('/*', async (c, next) => {
-  // Skip auth for public event endpoint
   if (c.req.path.endsWith('/public') && c.req.method === 'GET') {
     return next();
   }
-  return authMiddleware(c, next);
+  return defaultOrganizerMiddleware(c, next);
 });
 
 /**
  * GET /api/events
- * List all events for the authenticated organizer.
+ * List all events for the organizer.
  */
 events.get('/', async (c) => {
   const organizerId = c.get('organizerId');
@@ -219,7 +219,7 @@ events.delete('/:id', async (c) => {
 
 /**
  * GET /api/events/:id/public
- * Public event info for participant page (NO auth required).
+ * Public event info for participant page (no organizer context needed).
  */
 events.get('/:id/public', async (c) => {
   const eventId = c.req.param('id');

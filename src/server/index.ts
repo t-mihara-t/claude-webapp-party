@@ -8,7 +8,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { AppEnv } from './middleware/auth';
-import auth from './routes/auth';
 import events from './routes/events';
 import participants from './routes/participants';
 import restaurants from './routes/restaurants';
@@ -30,7 +29,6 @@ app.get('/api/health', (c) => {
 });
 
 // Mount route modules
-app.route('/api/auth', auth);
 app.route('/api/events', events);
 
 // Participant routes are nested under events
