@@ -18,9 +18,9 @@ export default function EventResponse() {
     if (!id) return;
 
     setLoading(true);
-    apiGet<Event>(`/events/${id}/public`)
+    apiGet<{ event: Event }>(`/events/${id}/public`)
       .then((data) => {
-        setEvent(data);
+        setEvent(data.event);
       })
       .catch((err) => {
         if (err && typeof err === "object" && "status" in err && err.status === 404) {

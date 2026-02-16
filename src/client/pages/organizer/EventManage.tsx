@@ -43,8 +43,8 @@ export default function EventManage() {
   const fetchEvent = useCallback(async () => {
     if (!id) return;
     try {
-      const data = await apiGet<Event>(`/events/${id}`);
-      setEvent(data);
+      const data = await apiGet<{ event: Event }>(`/events/${id}`);
+      setEvent(data.event);
       setError(null);
     } catch (err) {
       setError(
@@ -61,8 +61,8 @@ export default function EventManage() {
 
   const handleEventUpdate = async (values: Partial<Event>) => {
     if (!id) return;
-    const updated = await apiPut<Event>(`/events/${id}`, values);
-    setEvent(updated);
+    const { event } = await apiPut<{ event: Event }>(`/events/${id}`, values);
+    setEvent(event);
     setEditSuccess(true);
     setTimeout(() => setEditSuccess(false), 3000);
   };

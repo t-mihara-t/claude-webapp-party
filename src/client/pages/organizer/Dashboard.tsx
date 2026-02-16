@@ -28,10 +28,10 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
 
-    apiGet<Event[]>("/events")
+    apiGet<{ events: Event[] }>("/events")
       .then((data) => {
         if (!cancelled) {
-          setEvents(data);
+          setEvents(data.events);
           setLoading(false);
         }
       })

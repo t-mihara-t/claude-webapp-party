@@ -59,10 +59,10 @@ export default function ParticipantManager({ eventId }: ParticipantManagerProps)
 
   const fetchParticipants = async () => {
     try {
-      const data = await apiGet<Participant[]>(
+      const data = await apiGet<{ participants: Participant[] }>(
         `/events/${eventId}/participants`
       );
-      setParticipants(data);
+      setParticipants(data.participants);
       setError(null);
     } catch (err) {
       setError(
@@ -90,7 +90,7 @@ export default function ParticipantManager({ eventId }: ParticipantManagerProps)
       if (newGender) {
         body.gender = newGender;
       }
-      const created = await apiPost<Participant>(
+      const { participant: created } = await apiPost<{ participant: Participant }>(
         `/events/${eventId}/participants`,
         body
       );
@@ -113,7 +113,7 @@ export default function ParticipantManager({ eventId }: ParticipantManagerProps)
     value: string
   ) => {
     try {
-      const updated = await apiPut<Participant>(
+      const { participant: updated } = await apiPut<{ participant: Participant }>(
         `/events/${eventId}/participants/${participantId}`,
         { [field]: value }
       );

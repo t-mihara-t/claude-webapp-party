@@ -9,8 +9,8 @@ export default function EventCreate() {
   const navigate = useNavigate();
 
   const handleSubmit = async (values: Partial<Event>) => {
-    const created = await apiPost<Event>("/events", values);
-    navigate(`/organizer/events/${created.id}`);
+    const { event } = await apiPost<{ event: Event }>("/events", values);
+    navigate(`/organizer/events/${event.id}`);
   };
 
   return (
