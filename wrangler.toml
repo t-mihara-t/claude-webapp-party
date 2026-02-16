@@ -2,12 +2,10 @@ name = "nomi-kai-manager"
 compatibility_date = "2024-11-01"
 pages_build_output_dir = "dist"
 
-# D1 database binding - uncomment and set real database_id after creating the database:
-#   wrangler d1 create nomi-kai-db
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "nomi-kai-db"
-# database_id = "<YOUR_DATABASE_ID>"
+[[d1_databases]]
+binding = "DB"
+database_name = "nomi-kai-db"
+database_id = "placeholder"
 
 # [vars]
 # HOTPEPPER_API_KEY = ""
