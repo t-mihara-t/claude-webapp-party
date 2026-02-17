@@ -38,13 +38,13 @@ export function AttendanceForm({
     setSubmitting(true);
 
     try {
-      const participant = await apiPost<Participant>(
+      const data = await apiPost<{ participant: Participant }>(
         `/events/${eventId}/respond`,
         { name: trimmedName, attendance },
       );
       setLastAttendance(attendance);
       setSubmitted(true);
-      onSubmitted(participant);
+      onSubmitted(data.participant);
     } catch (err) {
       setError(
         err instanceof Error

@@ -69,14 +69,16 @@ export default function SplitCalculator({
 
     const loadSplitRule = async () => {
       try {
-        const rule = await apiGet<SplitRule & { ratios: SplitRatio[] }>(
+        const data = await apiGet<{ split_rule: SplitRule | null; ratios: SplitRatio[] }>(
           `/events/${eventId}/split`
         );
         if (cancelled) return;
-        setRounding(rule.rounding);
-        if (rule.ratios && rule.ratios.length > 0) {
+        if (data.split_rule) {
+          setRounding(data.split_rule.rounding);
+        }
+        if (data.ratios && data.ratios.length > 0) {
           const newRatios = { ...ratios };
-          for (const r of rule.ratios) {
+          for (const r of data.ratios) {
             newRatios[r.role] = r.ratio.toString();
           }
           setRatios(newRatios);
@@ -98,10 +100,10 @@ export default function SplitCalculator({
     if (!totalAmount) return;
     setSavingTotal(true);
     try {
-      const updated = await apiPut<Event>(`/events/${eventId}`, {
+      const { event } = await apiPut<{ event: Event }>(`/events/${eventId}`, {
         total_amount: Number(totalAmount),
       });
-      onEventUpdated?.(updated);
+      onEventUpdated?.(event);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "合計金額の保存に失敗しました"
@@ -133,7 +135,13 @@ export default function SplitCalculator({
         ratio: Number(ratios[role]) || 0,
       }));
 
-      const data = await apiPost<CalculationResult>(
+      const serverData = await apiPost<{
+        total_amount: number;
+        total_calculated: number;
+        rounding: string;
+        participant_count: number;
+        results: Array<{ participant_id: string; name: string; role: Role; amount: number }>;
+      }>(
         `/events/${eventId}/split/calculate`,
         {
           total_amount: Number(totalAmount),
@@ -141,7 +149,16 @@ export default function SplitCalculator({
           ratios: ratioData,
         }
       );
-      setResult(data);
+      setResult({
+        participants: serverData.results.map((r) => ({
+          id: r.participant_id,
+          name: r.name,
+          role: r.role,
+          assigned_amount: r.amount,
+        })),
+        total: serverData.total_calculated,
+        adjustment: serverData.total_calculated - serverData.total_amount,
+      });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "計算に失敗しました"

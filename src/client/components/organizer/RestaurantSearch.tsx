@@ -19,11 +19,13 @@ interface RestaurantSearchProps {
 }
 
 const BUDGET_OPTIONS = [
-  { value: "3000", label: "~3,000円" },
-  { value: "4000", label: "~4,000円" },
-  { value: "5000", label: "~5,000円" },
-  { value: "8000", label: "~8,000円" },
-  { value: "10000", label: "~10,000円" },
+  { value: "B001", label: "1,501~2,000円" },
+  { value: "B002", label: "2,001~3,000円" },
+  { value: "B003", label: "3,001~4,000円" },
+  { value: "B004", label: "4,001~5,000円" },
+  { value: "B005", label: "5,001~7,000円" },
+  { value: "B006", label: "7,001~10,000円" },
+  { value: "B008", label: "10,001~15,000円" },
 ];
 
 export default function RestaurantSearch({
@@ -48,13 +50,13 @@ export default function RestaurantSearch({
 
     try {
       const params = new URLSearchParams({ keyword: keyword.trim() });
-      if (budget) {
+      if (budget && budget !== "none") {
         params.set("budget", budget);
       }
-      const data = await apiGet<Restaurant[]>(
+      const data = await apiGet<{ shops: Restaurant[] }>(
         `/restaurants/search?${params.toString()}`
       );
-      setResults(data);
+      setResults(data.shops);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "検索に失敗しました"

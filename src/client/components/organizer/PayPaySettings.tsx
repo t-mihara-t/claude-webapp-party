@@ -28,10 +28,10 @@ export default function PayPaySettings({
 
   useEffect(() => {
     let cancelled = false;
-    apiGet<Participant[]>(`/events/${eventId}/participants`)
+    apiGet<{ participants: Participant[] }>(`/events/${eventId}/participants`)
       .then((data) => {
         if (!cancelled) {
-          setParticipants(data);
+          setParticipants(data.participants);
           setLoadingParticipants(false);
         }
       })
@@ -50,10 +50,10 @@ export default function PayPaySettings({
     setSuccess(false);
 
     try {
-      const updated = await apiPut<Event>(`/events/${eventId}`, {
+      const { event } = await apiPut<{ event: Event }>(`/events/${eventId}`, {
         paypay_link: paypayLink.trim() || null,
       });
-      onEventUpdated?.(updated);
+      onEventUpdated?.(event);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {

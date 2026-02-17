@@ -28,6 +28,46 @@ jobs:
       - name: Verify build output
         run: ls -la dist/
 
+      - name: Setup D1 database
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 create nomi-kai-db
+        continue-on-error: true
+
+      - name: Get D1 database ID
+        id: d1
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 list --json
+        continue-on-error: false
+
+      - name: Update wrangler.toml with D1 database ID
+        run: |
+          DB_ID=$(echo '${{ steps.d1.outputs.command-output }}' | node -e "
+            const data = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+            const db = data.find(d => d.name === 'nomi-kai-db');
+            if (db) console.log(db.uuid);
+          ")
+          if [ -n "$DB_ID" ]; then
+            sed -i "s/database_id = \"placeholder\"/database_id = \"$DB_ID\"/" wrangler.toml
+            echo "D1 database ID: $DB_ID"
+          else
+            echo "ERROR: Could not find D1 database ID"
+            exit 1
+          fi
+
+      - name: Run D1 schema migration
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 execute nomi-kai-db --remote --file=./schema.sql
+        continue-on-error: true
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
