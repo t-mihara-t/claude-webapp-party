@@ -23,9 +23,24 @@ app.use('/api/*', cors({
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Health check
+// Health check (no DB required)
 app.get('/api/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+  return c.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    db_available: !!c.env.DB,
+  });
+});
+
+// D1 database availability check
+app.use('/api/*', async (c, next) => {
+  if (!c.env.DB) {
+    return c.json({
+      error: 'Database not configured',
+      message: 'D1 database binding "DB" is not available. Please configure the D1 binding in Cloudflare Pages settings: Workers & Pages > nomi-kai-manager > Settings > Bindings > D1 Database.',
+    }, 503);
+  }
+  return next();
 });
 
 // Mount route modules
